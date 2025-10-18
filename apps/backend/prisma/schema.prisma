@@ -1,0 +1,83 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        Int         @id @default(autoincrement())
+  fullName  String
+  nif       String      @unique
+  email     String      @unique
+  password  String
+  role      Role        @default(CLIENT)
+  balance   Float       @default(0)
+  services  Service[]   @relation("ProviderServices")
+  reservationsClient Reservation[] @relation("ClientReservations")
+  reservationsProvider Reservation[] @relation("ProviderReservations")
+  transactionsFrom Transaction[] @relation("FromUser")
+  transactionsTo   Transaction[] @relation("ToUser")
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+}
+
+enum Role {
+  CLIENT
+  PROVIDER
+}
+
+model Service {
+  id          Int       @id @default(autoincrement())
+  title       String
+  description String?
+  price       Float
+  providerId  Int
+  provider    User      @relation("ProviderServices", fields: [providerId], references: [id])
+  reservations Reservation[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model Reservation {
+  id          Int       @id @default(autoincrement())
+  serviceId   Int
+  clientId    Int
+  providerId  Int
+  price       Float
+  status      ReservationStatus @default(ACTIVE)
+  createdAt   DateTime   @default(now())
+  cancelledAt DateTime?
+  service     Service    @relation(fields: [serviceId], references: [id])
+  client      User       @relation("ClientReservations", fields: [clientId], references: [id])
+  provider    User       @relation("ProviderReservations", fields: [providerId], references: [id])
+  transactions Transaction[]
+}
+
+enum ReservationStatus {
+  ACTIVE
+  CANCELLED
+}
+
+model Transaction {
+  id            Int       @id @default(autoincrement())
+  reservationId Int?
+  fromUserId    Int
+  toUserId      Int
+  amount        Float
+  type          TransactionType
+  createdAt     DateTime  @default(now())
+  reservation   Reservation? @relation(fields: [reservationId], references: [id])
+  fromUser      User      @relation("FromUser", fields: [fromUserId], references: [id])
+  toUser        User      @relation("ToUser", fields: [toUserId], references: [id])
+}
+
+enum TransactionType {
+  RESERVE
+  REFUND
+}
