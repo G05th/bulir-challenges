@@ -1,6 +1,6 @@
-🚀 [Nome do Seu Projeto] Backend
+🚀 bulir Backend
 
-Este é o repositório backend da aplicação [Breve Descrição do Projeto - Ex: Plataforma de Agendamento e Transações Financeiras]. Construído com NestJS, ele utiliza uma arquitetura baseada em módulos, garantindo alta coesão e baixo acoplamento.
+Este é o repositório backend da aplicação API de reservas, autenticação e seed para testes.. Construído com NestJS, ele utiliza uma arquitetura baseada em módulos, garantindo alta coesão e baixo acoplamento.
 
 🌟 Visão Geral da Arquitetura
 
@@ -38,8 +38,8 @@ Requisitos de Desenvolvimento
 Bash
 
 # Clone o repositório
-git clone https://aws.amazon.com/pt/what-is/repo/
-cd [nome-do-projeto]
+git clone https://github.com/G05th/bulir-challenges.git
+cd bulir-challenges/apps/backend
 
 # Instale as dependências
 npm install
