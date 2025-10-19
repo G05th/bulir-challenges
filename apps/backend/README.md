@@ -1,98 +1,99 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+🚀 [Nome do Seu Projeto] Backend
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+Este é o repositório backend da aplicação [Breve Descrição do Projeto - Ex: Plataforma de Agendamento e Transações Financeiras]. Construído com NestJS, ele utiliza uma arquitetura baseada em módulos, garantindo alta coesão e baixo acoplamento.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+🌟 Visão Geral da Arquitetura
 
-## Description
+O projeto adota uma arquitetura limpa e orientada a transações, focada em segurança (JWT, Guards) e integridade financeira (Transações Atômicas).
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+Módulos Principais
 
-## Project setup
+Módulo	Responsabilidade	Destaque Arquitetural
+Auth	Autenticação, Cadastro (CLIENT / PROVIDER) e Geração de JWT.	Implementa JwtStrategy e RolesGuard para autorização baseada em papéis.
+Prisma	Camada de Acesso ao Banco de Dados (ORM).	Utiliza o PrismaService como Provider global e gerencia as migrações.
+Reservation	Gestão de Agendamentos e Finanças.	Núcleo de Integridade: Todas as operações (Reserva e Cancelamento) são executadas via $transaction do Prisma para garantir a atomicidade (débito/crédito simultâneo).
+Services	CRUD dos serviços oferecidos pelos Prestadores.	Segurança em Nível 2: Verifica a posse (providerId) antes de permitir a atualização ou exclusão.
+User	Gestão de perfis e saldos.	Inclui lógica para leitura e atualização do saldo (usado nas transações).
 
-```bash
-$ npm install
-```
+Padrões de Segurança Implementados
 
-## Compile and run the project
+    Guards & Roles: Utilização de AuthGuard('jwt') em combinação com o RolesGuard e o decorator @Roles() para restringir o acesso a rotas específicas por papel (CLIENT ou PROVIDER).
 
-```bash
-# development
-$ npm run start
+    Transações Atômicas: O módulo Reservation utiliza transações de banco de dados para garantir que o débito da conta de um usuário e o crédito na conta de outro ocorram juntos ou falhem juntos (princípio ACID).
 
-# watch mode
-$ npm run start:dev
+    Integridade de Dados: O sistema impede a exclusão de Serviços que possuam Reservas com status ACTIVE (lançando um 409 Conflict).
 
-# production mode
-$ npm run start:prod
-```
+🛠️ Requisitos e Instalação
 
-## Run tests
+Requisitos de Desenvolvimento
 
-```bash
-# unit tests
-$ npm run test
+    Node.js (versão LTS recomendada)
 
-# e2e tests
-$ npm run test:e2e
+    npm ou Yarn
 
-# test coverage
-$ npm run test:cov
-```
+    [Docker] (Opcional, para banco de dados em produção)
 
-## Deployment
+1. Clonagem e Configuração
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
+Bash
 
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+# Clone o repositório
+git clone https://aws.amazon.com/pt/what-is/repo/
+cd [nome-do-projeto]
 
-```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
-```
+# Instale as dependências
+npm install
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+2. Configuração de Variáveis de Ambiente
 
-## Resources
+Crie um arquivo chamado .env na raiz do projeto e preencha as variáveis de ambiente necessárias:
+Ini, TOML
 
-Check out a few resources that may come in handy when working with NestJS:
+PORT=3000
+NODE_ENV=development
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+# JWT CONFIG
+JWT_SECRET=sua_chave_secreta_muito_forte_e_aleatoria_aqui
+JWT_EXPIRES_IN=60m
 
-## Support
+# PRISMA/DB CONFIG
+# Usando SQLite para desenvolvimento
+DATABASE_URL="file:./dev.db" 
+# Para PostgreSQL, use: DATABASE_URL="postgresql://user:password@localhost:5432/db_name?schema=public"
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+3. Configuração do Banco de Dados (Prisma)
 
-## Stay in touch
+Crie o arquivo do banco de dados e execute a primeira migração:
+Bash
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+# Cria o arquivo dev.db e aplica o schema do Prisma
+npx prisma migrate dev --name init
 
-## License
+▶️ Executando a Aplicação
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+Modo Desenvolvimento (Hot Reload)
+
+Bash
+
+npm run start:dev
+
+A aplicação estará acessível em http://localhost:3000.
+
+Modo Produção
+
+Bash
+
+npm run build
+npm run start
+
+🧪 Rotas e Endpoints Principais
+
+A documentação completa das rotas (DTOs, schemas) pode ser obtida via Swagger (se implementado) ou nos arquivos *.controller.ts.
+Módulo	Método	Rota	Descrição	Papéis Autorizados
+Auth	POST	/auth/register	Cria Cliente ou Prestador.	Público
+Auth	POST	/auth/login	Retorna o JWT.	Público
+Services	GET	/services	Lista todos os serviços.	Público
+Services	POST	/services	Cria um novo serviço.	PROVIDER
+Services	DELETE	/services/:id	Exclui um serviço (Verifica Posse e Reservas Ativas).	PROVIDER
+Reservations	POST	/reservations	Cria uma nova reserva (Transação Atômica).	CLIENT
+Reservations	DELETE	/reservations/:id/cancel	Cancela e Estorna (Transação Atômica Reversa).	CLIENT, PROVIDER
