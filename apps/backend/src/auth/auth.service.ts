@@ -56,8 +56,8 @@ export class AuthService {
   loginToken(user: SafeUser) {
     const payload = {
       email: user.email,
+      sub: user.id,
       role: user.role,
-      userId: user.id,
     };
 
     return {

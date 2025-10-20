@@ -1,3 +1,4 @@
+// src/reservation/reservation.service.ts
 import {
   BadRequestException,
   ForbiddenException,
@@ -18,9 +19,15 @@ export class ReservationService {
     data: CreateReservationDto,
     client: SafeUser,
   ): Promise<Reservation> {
-    const service = await this.prisma.service.findUnique({
-      where: { id: data.serviceId },
-    });
+    // Busca o serviço e o cliente diretamente do banco (para garantir saldo atualizado)
+    const [service, clientDB] = await Promise.all([
+      this.prisma.service.findUnique({
+        where: { id: data.serviceId },
+      }),
+      this.prisma.user.findUnique({
+        where: { id: client.id },
+      }),
+    ]);
 
     if (!service) {
       throw new NotFoundException(
@@ -28,6 +35,11 @@ export class ReservationService {
       );
     }
 
+    if (!clientDB) {
+      throw new NotFoundException('Cliente não encontrado.');
+    }
+
+    // Verifica se o provedor de serviço existe e tem o papel correto
     const serviceProvider = await this.prisma.user.findUnique({
       where: { id: service.providerId },
     });
@@ -38,8 +50,16 @@ export class ReservationService {
       );
     }
 
+    // Impede que o provedor reserve o próprio serviço
+    if (service.providerId === clientDB.id) {
+      throw new ForbiddenException(
+        'Você não pode reservar seu próprio serviço.',
+      );
+    }
+
     const servicePrice = service.price;
-    if (client.balance < servicePrice) {
+
+    if (clientDB.balance < servicePrice) {
       throw new BadRequestException(
         'Saldo insuficiente para reservar o serviço.',
       );
@@ -47,19 +67,22 @@ export class ReservationService {
 
     try {
       const createdReservation = await this.prisma.$transaction(async (tx) => {
+        // 1️⃣ Debita o saldo do cliente
         await tx.user.update({
-          where: { id: client.id },
+          where: { id: clientDB.id },
           data: { balance: { decrement: servicePrice } },
         });
 
+        // 2️⃣ Credita o saldo ao provedor
         await tx.user.update({
           where: { id: service.providerId },
           data: { balance: { increment: servicePrice } },
         });
 
+        // 3️⃣ Cria a reserva
         const reservation = await tx.reservation.create({
           data: {
-            clientId: client.id,
+            clientId: clientDB.id,
             serviceId: service.id,
             providerId: service.providerId,
             price: servicePrice,
@@ -67,10 +90,11 @@ export class ReservationService {
           },
         });
 
+        // 4️⃣ Registra a transação financeira
         await tx.transaction.create({
           data: {
             reservationId: reservation.id,
-            fromUserId: client.id,
+            fromUserId: clientDB.id,
             toUserId: service.providerId,
             amount: servicePrice,
             type: 'RESERVE',
@@ -88,6 +112,7 @@ export class ReservationService {
       );
     }
   }
+
   async cancelReservation(
     reservationId: number,
     userId: number,
@@ -117,9 +142,9 @@ export class ReservationService {
       throw new NotFoundException('Provedor da reserva não encontrado.');
     }
 
-    const estornoPrice = reservation.price;
+    const refundAmount = reservation.price;
 
-    if (reservation.provider.balance < estornoPrice) {
+    if (reservation.provider.balance < refundAmount) {
       throw new BadRequestException(
         'O prestador não possui saldo suficiente para o estorno.',
       );
@@ -129,14 +154,12 @@ export class ReservationService {
       const [, , updatedReservation] = await this.prisma.$transaction([
         this.prisma.user.update({
           where: { id: reservation.clientId },
-          data: { balance: { increment: estornoPrice } },
+          data: { balance: { increment: refundAmount } },
         }),
-
         this.prisma.user.update({
           where: { id: reservation.providerId },
-          data: { balance: { decrement: estornoPrice } },
+          data: { balance: { decrement: refundAmount } },
         }),
-
         this.prisma.reservation.update({
           where: { id: reservation.id },
           data: {
@@ -144,13 +167,12 @@ export class ReservationService {
             cancelledAt: new Date(),
           },
         }),
-
         this.prisma.transaction.create({
           data: {
             reservationId: reservation.id,
             fromUserId: reservation.providerId,
             toUserId: reservation.clientId,
-            amount: estornoPrice,
+            amount: refundAmount,
             type: 'REFUND',
           },
         }),
