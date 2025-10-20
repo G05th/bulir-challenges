@@ -13,14 +13,19 @@ import { JwtStrategy } from './strategy/jwt.strategy';
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: (configService: ConfigService) => ({
-        secret: configService.get<string>('JWT_SECRET'),
-        signOptions: {
-          expiresIn: configService.get<string>(
-            'JWT_EXPIRES_IN',
-          ) as unknown as StringValue,
-        },
-      }),
+      useFactory: (configService: ConfigService) => {
+        const secret = configService.get<string>('JWT_SECRET')!;
+
+        // Garante que o valor expiresIn é uma string e aplica o 'as any' para satisfazer o compilador
+        const expiresIn = configService.get<string>('JWT_EXPIRES_IN') as string;
+
+        return {
+          secret: secret,
+          signOptions: {
+            expiresIn: expiresIn as any, // Força a aceitação pelo compilador
+          },
+        };
+      },
     }),
   ],
   controllers: [AuthController],
